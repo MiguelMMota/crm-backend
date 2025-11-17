@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Note
+from apps.relationships.models import Relationship
 from apps.relationships.serializers import RelationshipSerializer
 
 
@@ -8,8 +9,9 @@ class NoteSerializer(serializers.ModelSerializer):
     relationship_data = RelationshipSerializer(source='relationship', read_only=True)
     relationship_id = serializers.PrimaryKeyRelatedField(
         write_only=True,
-        queryset=None,  # Will be set in __init__
-        source='relationship'
+        queryset=Relationship.objects.none(),  # Default empty, set dynamically in __init__
+        source='relationship',
+        required=False
     )
 
     class Meta:
@@ -24,7 +26,6 @@ class NoteSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if 'request' in self.context:
-            from apps.relationships.models import Relationship
             self.fields['relationship_id'].queryset = Relationship.objects.filter(
                 user=self.context['request'].user
             )
