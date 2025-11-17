@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Interaction
+from apps.relationships.models import Relationship
 from apps.relationships.serializers import RelationshipSerializer
 
 
@@ -9,9 +10,18 @@ class InteractionSerializer(serializers.ModelSerializer):
     relationship_ids = serializers.PrimaryKeyRelatedField(
         many=True,
         write_only=True,
-        queryset=None,  # Will be set in __init__
-        source='relationships'
+        queryset=Relationship.objects.none(),  # Default empty, set dynamically in __init__
+        source='relationships',
+        required=False
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set queryset for relationship_ids to current user's relationships
+        if 'request' in self.context:
+            self.fields['relationship_ids'].queryset = Relationship.objects.filter(
+                user=self.context['request'].user
+            )
 
     class Meta:
         model = Interaction
@@ -22,15 +32,6 @@ class InteractionSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         )
         read_only_fields = ('id', 'user', 'interaction_date', 'created_at', 'updated_at')
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Set queryset for relationship_ids to current user's relationships
-        if 'request' in self.context:
-            from apps.relationships.models import Relationship
-            self.fields['relationship_ids'].queryset = Relationship.objects.filter(
-                user=self.context['request'].user
-            )
 
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
