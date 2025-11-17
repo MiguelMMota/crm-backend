@@ -19,7 +19,9 @@ AI-enriched CRM backend with video/audio processing, face/voice recognition, and
 - **Database**: PostgreSQL 16 with pgvector extension
 - **Cache/Message Broker**: Redis
 - **WebSocket**: Django Channels
-- **Background Tasks**: Celery
+- **Background Tasks**:
+  - Celery Worker - Processes async AI tasks (video/audio processing, face recognition, transcription)
+  - Celery Beat - Scheduler for periodic tasks (cleanup, reports, maintenance)
 - **AI/ML**:
   - OpenAI API (Whisper, GPT-4) - Production
   - Local Whisper - Development transcription
@@ -28,65 +30,96 @@ AI-enriched CRM backend with video/audio processing, face/voice recognition, and
 
 ## Prerequisites
 
-- Python 3.11+
-- Poetry
 - Docker & Docker Compose
 - (Optional) CUDA for GPU acceleration with local models
 
-## Setup
+## Quick Start
 
-### 1. Install Dependencies
-
-```bash
-poetry install
-```
-
-### 2. Start Services
-
-Start PostgreSQL and Redis:
-
-```bash
-docker-compose up -d
-```
-
-### 3. Configure Environment
+### 1. Configure Environment
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and configure:
-- Database credentials
-- Redis URL
-- AI model selection (`USE_OPENAI_APIS=true` for production, `false` for local)
-- OpenAI API key (if using OpenAI APIs)
+Edit `.env` if needed (default values work for local development):
+- AI model selection: `USE_OPENAI_APIS=false` (uses local models, free)
+- For production: Set `USE_OPENAI_APIS=true` and add your `OPENAI_API_KEY`
 
-### 4. Initialize Database
+### 2. Start All Services
 
 ```bash
-# Create database and enable pgvector extension
+docker-compose up --build
+```
+
+This single command will:
+- ✅ Start PostgreSQL with pgvector extension
+- ✅ Start Redis for caching and message brokering
+- ✅ Run Django migrations automatically
+- ✅ Start Django development server (port 8000)
+- ✅ Start Celery worker for async AI processing
+- ✅ Start Celery beat for scheduled tasks
+
+### 3. Create Superuser (Optional)
+
+In a new terminal:
+
+```bash
+docker-compose exec web python manage.py createsuperuser
+```
+
+That's it! The API is now running at `http://localhost:8000`
+
+## Alternative: Local Development (Without Docker)
+
+If you prefer running services locally:
+
+<details>
+<summary>Click to expand local setup instructions</summary>
+
+### Prerequisites
+- Python 3.11+
+- Poetry
+- PostgreSQL 16+ with pgvector
+- Redis
+
+### Setup
+
+```bash
+# Install dependencies
+poetry install
+
+# Start PostgreSQL and Redis (or run in Docker)
+docker-compose up postgres redis -d
+
+# Configure environment
+cp .env.example .env
+# Edit .env: Set DB_HOST=localhost, REDIS_URL=redis://localhost:6379/0
+
+# Run migrations
 poetry run python manage.py migrate
 
 # Create superuser
 poetry run python manage.py createsuperuser
 ```
 
-### 5. Run Services
+### Run Services (3 terminals)
 
-**Django Server (Terminal 1):**
+**Terminal 1 - Django:**
 ```bash
 poetry run python manage.py runserver
 ```
 
-**Celery Worker (Terminal 2):**
+**Terminal 2 - Celery Worker:**
 ```bash
-poetry run celery -A celery_app worker -l info
+poetry run celery -A celery_app.celery_config worker -l info
 ```
 
-**Optional - Celery Beat (Terminal 3):**
+**Terminal 3 - Celery Beat (optional):**
 ```bash
-poetry run celery -A celery_app beat -l info
+poetry run celery -A celery_app.celery_config beat -l info
 ```
+
+</details>
 
 ## API Documentation
 
