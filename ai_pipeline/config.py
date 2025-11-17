@@ -26,7 +26,7 @@ class AIConfig:
 
     # LLM settings for note extraction
     if USE_OPENAI:
-        LLM_MODEL = 'gpt-4-turbo-preview'
+        LLM_MODEL = 'gpt-4o'
         LLM_TEMPERATURE = 0.3
     else:
         LLM_MODEL = 'llama2'  # Or other local model
