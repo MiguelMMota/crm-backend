@@ -62,7 +62,7 @@ def transcribe_with_openai(audio_bytes):
 
 def transcribe_with_local_whisper(audio_bytes):
     """
-    Transcribe audio using local Whisper model.
+    Transcribe audio using local Whisper model (faster-whisper).
 
     Args:
         audio_bytes: Audio data in bytes
@@ -70,11 +70,11 @@ def transcribe_with_local_whisper(audio_bytes):
     Returns:
         Transcription text
     """
-    import whisper
-    import torch
+    from faster_whisper import WhisperModel
 
-    # Load model (consider caching this)
-    model = whisper.load_model(AIConfig.TRANSCRIPTION_MODEL)
+    # Load model (consider caching this globally for better performance)
+    # Using CPU and int8 quantization for macOS compatibility
+    model = WhisperModel(AIConfig.TRANSCRIPTION_MODEL, device="cpu", compute_type="int8")
 
     # Save audio to temporary file
     with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_audio:
@@ -82,9 +82,11 @@ def transcribe_with_local_whisper(audio_bytes):
         temp_audio_path = temp_audio.name
 
     try:
-        # Transcribe
-        result = model.transcribe(temp_audio_path)
-        return result['text']
+        # Transcribe - faster-whisper returns segments and info
+        segments, info = model.transcribe(temp_audio_path)
+        # Combine all segments into single text
+        transcription = " ".join([segment.text for segment in segments])
+        return transcription
     finally:
         # Clean up
         import os
