@@ -37,6 +37,7 @@ services:
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
+      - /app/.venv  # Exclude local venv from being mounted
       - media_data:/app/media
     ports:
       - "8000:8000"
@@ -55,6 +56,7 @@ services:
     command: celery -A celery_app.celery_config worker -l info
     volumes:
       - .:/app
+      - /app/.venv  # Exclude local venv from being mounted
       - media_data:/app/media
     env_file:
       - .env
@@ -71,6 +73,7 @@ services:
     command: celery -A celery_app.celery_config beat -l info
     volumes:
       - .:/app
+      - /app/.venv  # Exclude local venv from being mounted
     env_file:
       - .env
     depends_on:
