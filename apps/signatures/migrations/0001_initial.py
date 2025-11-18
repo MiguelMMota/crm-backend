@@ -2,6 +2,7 @@
 
 import django.db.models.deletion
 import pgvector.django
+from django.contrib.postgres.operations import CreateExtension
 from django.db import migrations, models
 
 
@@ -14,6 +15,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # First, enable the pgvector extension
+        CreateExtension('vector'),
+
+        # Then create the models that use pgvector
         migrations.CreateModel(
             name='FaceSignature',
             fields=[
